@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Wakaf Quran - <%= paket.nama_paket %></title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Pre-define global functions to avoid reference errors
+        window.openEditWakafModal = function() { console.log('openEditWakafModal called'); };
+        window.closeEditWakafModal = function() { console.log('closeEditWakafModal called'); };
+        window.addEditWakifRow = function() { console.log('addEditWakifRow called'); };
+        window.removeEditWakifRow = function() { console.log('removeEditWakifRow called'); };
+        window.submitEditWakaf = function() { console.log('submitEditWakaf called'); };
+    </script>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+        body {
+            font-family: "Plus Jakarta Sans", sans-serif;
+            background-color: #f8fafc;
+        }
+        .table-row-animate {
+            transition: all 0.2s ease;
+        }
+        .table-row-animate:hover {
+            background-color: #fef9e7 !important;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-badge {
+            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .badge-pending {
+            background-color: rgb(251, 191, 36);
+            color: rgb(120, 53, 15);
+        }
+        .badge-verified {
+            background-color: rgb(220, 252, 231);
+            color: rgb(34, 197, 94);
+        }
+        .badge-cancelled {
+            background-color: rgb(254, 226, 226);
+            color: rgb(239, 68, 68);
+        }
+        .badge-belum {
+            background-color: rgb(229, 231, 235);
+            color: rgb(55, 65, 81);
+        }
+        .badge-proses {
+            background-color: rgb(219, 234, 254);
+            color: rgb(30, 144, 255);
+        }
+        .badge-kirim {
+            background-color: rgb(220, 252, 231);
+            color: rgb(34, 197, 94);
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <%- include('../../../partials/sidebar') %>
+
+<div class="main-content lg:ml-64">
+  <div class="mt-8">
+    <% const subtitleText = new Date(paket.tanggal_keberangkatan).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) + ' | Batch: ' + paket.batch; %>
+    <%- include('../../../partials/header', { title: paket.nama_paket, subtitle: subtitleText, alignItems: 'sm:items-center', actions: [{ icon: 'fas fa-arrow-left', label: '', url: 'javascript:window.history.back()', btnClass: 'bg-gray-600/80 text-white hover:bg-gray-700 border border-gray-500' }, { icon: 'fas fa-plus', label: 'Tambah Wakaf', id: 'addWakafAction', onclick: `openCreateWakafModal('${paket.id}')`, btnClass: 'bg-white text-[#F9A825] hover:bg-gray-100' }], user: user }) %>
+  </div>
+
+  <div class="p-4 md:p-6 lg:p-8">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 fade-in">
+
+            <!-- Statistik Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                    <p class="text-sm text-blue-600 font-medium">Total Pemesan</p>
+                    <p id="stat-total-pemesan" class="text-3xl font-bold text-blue-800 mt-1"><%= stats?.total_pemesan || 0 %></p>
+                </div>
+                <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                    <p class="text-sm text-indigo-600 font-medium">Total Wakif</p>
+                    <p id="stat-total-wakif" class="text-3xl font-bold text-indigo-800 mt-1"><%= stats?.total_wakif || 0 %></p>
+                </div>
+                <div class="bg-green-50 p-6 rounded-2xl border border-green-100">
+                    <p class="text-sm text-green-600 font-medium">Total Quran</p>
+                    <p id="stat-total-quran" class="text-3xl font-bold text-green-800 mt-1"><%= stats?.total_quran || 0 %></p>
+                </div>
+                <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100">
+                    <p class="text-sm text-amber-600 font-medium">Nominal</p>
+                    <p id="stat-nominal" class="text-3xl font-bold text-amber-800 mt-1">Rp <%= (Math.round(Number(stats?.nominal || 0))).toLocaleString('id-ID') %></p>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="rounded-xl border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table id="wakafTable" class="w-full text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-3 text-left font-semibold text-gray-700">No</th>
+                                <th class="px-6 py-3 text-left font-semibold text-gray-700">Nama Pemesan</th>
+                                <th class="px-6 py-3 text-left font-semibold text-gray-700">Nomor WhatsApp</th>
+                                <th class="px-6 py-3 text-center font-semibold text-gray-700">Jumlah Wakaf</th>
+                                <th class="px-6 py-3 text-center font-semibold text-gray-700">Status Verif</th>
+                                <th class="px-6 py-3 text-center font-semibold text-gray-700">Status Pengiriman</th>
+                                <th class="px-6 py-3 text-left font-semibold text-gray-700">Jenis Pembayaran</th>
+                                <th class="px-6 py-3 text-center font-semibold text-gray-700">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% entries.forEach((entry, index) => { %>
+                                <tr id="entry-row-<%= entry.id_rekap_wakaf_quran || entry.id || '' %>" data-id="<%= entry.id_rekap_wakaf_quran || entry.id || '' %>" data-jumlah-mushaf="<%= entry.jumlah_mushaf || 0 %>" data-total-harga="<%= entry.total_harga || 0 %>" class="table-row-animate border-b border-gray-200 hover:bg-gray-50">
+                                    <td class="px-6 py-4"><%= index + 1 %></td>
+                                    <td class="px-6 py-4">
+                                        <span class="font-medium text-gray-800"><%= entry.nama_pemesan %></span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="text-gray-600"><%= entry.nomor_whatsapp %></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold">
+                                            <%= entry.jumlah_mushaf %>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <% if (entry.status_verifikasi === 'pending') { %>
+                                            <span class="status-badge bg-amber-100 text-amber-700">Pending</span>
+                                        <% } else if (entry.status_verifikasi === 'verified') { %>
+                                            <span class="status-badge bg-green-100 text-green-700">Verified</span>
+                                        <% } else if (entry.status_verifikasi === 'cancelled') { %>
+                                            <span class="status-badge bg-red-100 text-red-700">Cancelled</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <% if (entry.status_pengiriman === 'Belum Kirim') { %>
+                                            <span class="status-badge bg-gray-100 text-gray-700">Belum Kirim</span>
+                                        <% } else if (entry.status_pengiriman === 'Sedang Diproses') { %>
+                                            <span class="status-badge bg-blue-100 text-blue-700">Sedang Diproses</span>
+                                        <% } else if (entry.status_pengiriman === 'Sudah Kirim') { %>
+                                            <span class="status-badge bg-green-100 text-green-700">Sudah Kirim</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="text-gray-600"><%= entry.payment_type || '-' %></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex gap-2 justify-center">
+                                            <button onclick="openDetailWakafModal('<%= entry.id_rekap_wakaf_quran %>')" 
+                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all" 
+                                                    title="Lihat Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button onclick="openEditWakafModal('<%= entry.id_rekap_wakaf_quran %>')" 
+                                                    class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all" 
+                                                    title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" data-id="<%= entry.id_rekap_wakaf_quran || entry.id || '' %>" 
+                                                    onclick="deleteWakafEntry(this)" 
+                                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all" 
+                                                    title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Client-side empty message (shown when all rows are removed dynamically) -->
+                <div id="emptyTableMessage" class="px-6 py-12 text-center hidden">
+                    <i class="fas fa-inbox text-4xl text-gray-300 mb-4 block"></i>
+                    <p class="text-gray-600">Tidak ada data wakaf quran untuk paket ini</p>
+                </div>
+
+                <% if (entries.length === 0) { %>
+                    <div class="px-6 py-12 text-center">
+                        <i class="fas fa-inbox text-4xl text-gray-300 mb-4 block"></i>
+                        <p class="text-gray-600">Tidak ada data wakaf quran untuk paket ini</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Modal Components -->
+    <%- include('./components/modal-create') %>
+    <%- include('./components/modal-edit') %>
+    <%- include('./components/modal-detail') %>
+
+    <script>
+        // Attach header action
+        document.getElementById('addWakafAction')?.addEventListener('click', function(e){ e.preventDefault(); openCreateWakafModal('<%= paket.id %>'); });
+    </script>
+
+    <script>
+        // Global variables for edit modal
+        // Expose wakaf API origin to client JS (may be empty)
+        window.WAKAF_API_ORIGIN = window.WAKAF_API_ORIGIN || '<%= wakafApiOrigin || "" %>';
+        let editWakifCount = 0;
+        let editQuillEditor; // Global variable for Quill editor
+
+        // Initialize Quill editor when modal opens
+        function initializeEditQuillEditor() {
+            try {
+                if (!editQuillEditor) {
+                    editQuillEditor = new Quill('#editEditor', {
+                        theme: 'snow',
+                        placeholder: 'Masukkan keterangan bukti transfer (hanya text, tanpa gambar)...',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['link'],
+                                ['clean']
+                            ]
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error initializing Quill editor:', error);
+            }
+        }
+
+        // Global function to open edit modal
+        window.openEditWakafModal = function(entryId) {
+            // Initialize Quill editor
+            initializeEditQuillEditor();
+
+            // Show the edit modal
+            document.getElementById('editWakafModal').classList.remove('hidden');
+            
+            // Fetch data entry
+            fetch(`/layanan-tambahan/wakaf-quran/${entryId}/detail`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const entry = data.data;
+                        
+                        // Populate form fields
+                        const resolvedId = entry.id_rekap_wakaf_quran || entry.id || null;
+                        document.getElementById('editEntryId').value = resolvedId;
+                        // Keep a global pointer as well to prevent 'undefined' being used
+                        window.currentEditEntryId = resolvedId;
+
+                        document.getElementById('editIdLayananTambahan').value = entry.id_layanan_tambahan || '';
+                        document.getElementById('editLayananTambahan').value = entry.nama_layanan || 'Wakaf Quran';
+                        document.getElementById('editPaketUmrohId').value = entry.paket_umroh_id || '';
+                        document.getElementById('editPaketUmroh').value = entry.nama_paket ? 'Batch ' + entry.batch + ' - ' + entry.nama_paket : '';
+                        document.getElementById('editNamaPemesan').value = entry.nama_pemesan;
+                        document.getElementById('editNomorWhatsapp').value = entry.nomor_whatsapp;
+                        document.getElementById('editJumlahMushaf').value = entry.jumlah_mushaf;
+                        document.getElementById('editHargaPerMushaf').value = formatRibuan(Math.round(Number(entry.harga_per_mushaf) || 0));
+                        document.getElementById('editTotalHargaDisplay').value = 'Rp ' + formatRibuan(Math.round(Number(entry.total_harga) || 0));
+                        document.getElementById('editTotalHarga').value = Math.round(Number(entry.total_harga) || 0);
+                        document.getElementById('editPaymentType').value = entry.payment_type || '';
+
+                        // Handle bukti transfer - check if it's an image or text
+                        const existingImageContainer = document.getElementById('existingImageContainer');
+                        const noExistingImage = document.getElementById('noExistingImage');
+                        const existingImage = document.getElementById('existingImage');
+                        const existingImagePath = document.getElementById('existingImagePath');
+
+                        // Show previous bukti transfer preview if available
+                        const previewValTf = entry.bukti_tf_preview || entry.bukti_tf || entry.bukti_transfer || '';
+                        if (previewValTf) {
+                            // Robustly decode HTML entities and extract image src if input contains HTML
+                            function decodeHtmlEntities(str) {
+                                const txt = document.createElement('textarea');
+                                txt.innerHTML = str;
+                                return txt.value;
+                            }
+
+                            let decoded = previewValTf;
+                            try {
+                                decoded = decodeHtmlEntities(previewValTf);
+                            } catch (e) {
+                                // ignore
+                            }
+
+                            let extractedSrc = decoded;
+                            try {
+                                const tmp = document.createElement('div');
+                                tmp.innerHTML = decoded;
+                                const imgFound = tmp.querySelector('img');
+                                if (imgFound && imgFound.getAttribute('src')) {
+                                    extractedSrc = imgFound.getAttribute('src');
+                                } else {
+                                    const m = decoded.match(/<img[^>]+src=["']([^"']+)["']/i);
+                                    if (m) extractedSrc = m[1];
+                                }
+                            } catch (e) {
+                                console.warn('Failed to parse preview HTML, falling back to raw value', e);
+                                extractedSrc = decoded;
+                            }
+
+                            // Final fallback: trim spaces
+                            extractedSrc = (extractedSrc || '').toString().trim();
+
+                            let srcTf;
+                            if (/^(?:https?:\/\/|\/)/i.test(extractedSrc)) {
+                                srcTf = extractedSrc;
+                            } else {
+                                // filename only
+                                srcTf = WAKAF_API_ORIGIN ? `${WAKAF_API_ORIGIN}/uploads/wakaf-quran/bukti_transfer/${extractedSrc}` : `/uploads/wakaf-quran/bukti_transfer/${extractedSrc}`;
+                            }
+
+                            const textCenter = existingImageContainer.querySelector('.text-center');
+                            // Use DOM methods to avoid HTML parsing/escaping issues
+                            textCenter.innerHTML = '';
+                            const link = document.createElement('a');
+                            link.href = srcTf;
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+
+                            const imgEl = document.createElement('img');
+                            imgEl.id = 'existingImage';
+                            imgEl.src = srcTf;
+                            imgEl.alt = 'Bukti Transfer';
+                            imgEl.className = 'max-w-full h-48 object-contain mx-auto rounded-lg border border-gray-200';
+
+                            link.appendChild(imgEl);
+                            textCenter.appendChild(link);
+
+                            const caption = document.createElement('p');
+                            caption.className = 'text-xs text-gray-500 mt-2';
+                            caption.textContent = 'Gambar bukti transfer yang sudah ada';
+                            textCenter.appendChild(caption);
+
+                            // Store only the filename (basename) to avoid building bad URLs later
+                            let storedValue = extractedSrc;
+                            try {
+                                // If it's an uploads path, extract the basename
+                                const possibleBasename = storedValue.split('/').filter(s => s).pop();
+                                if (possibleBasename) storedValue = possibleBasename;
+                            } catch (e) {
+                                // ignore
+                            }
+                            existingImagePath.value = storedValue;
+                            existingImageContainer.classList.remove('hidden');
+                            noExistingImage.classList.add('hidden');
+
+                            // Clear Quill editor for new input
+                            if (editQuillEditor) {
+                                editQuillEditor.root.innerHTML = '';
+                            }
+                        } else {
+                            // Show text in Quill editor
+                            if (editQuillEditor) {
+                                editQuillEditor.root.innerHTML = entry.bukti_tf || '';
+                            }
+                            existingImageContainer.classList.add('hidden');
+                            noExistingImage.classList.remove('hidden');
+                            existingImagePath.value = '';
+                        }
+
+                        // Clear and populate wakif rows
+                        editWakifCount = 0;
+                        document.getElementById('editWakifContainer').innerHTML = '';
+                        
+                        if (entry.wakif && entry.wakif.length > 0) {
+                            entry.wakif.forEach(wakif => {
+                                addEditWakifRow(wakif.nama_wakif, wakif.keterangan_bin, wakif.bin_wakif);
+                            });
+                            const emptyMessage = document.getElementById('emptyEditWakifMessage');
+                            if (emptyMessage) emptyMessage.style.display = 'none';
+                        } else {
+                            const emptyMessage = document.getElementById('emptyEditWakifMessage');
+                            if (emptyMessage) emptyMessage.style.display = 'block';
+                        }
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Gagal memuat data untuk edit'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Gagal memuat data: ' + err.message
+                    });
+                });
+        }
+
+        // Close edit modal
+        window.closeEditWakafModal = function() {
+            document.getElementById('editWakafModal').classList.add('hidden');
+            document.getElementById('editWakafForm').reset();
+            // Clear Quill editor
+            if (editQuillEditor) {
+                editQuillEditor.setContents([]);
+            }
+        }
+
+        window.addEditWakifRow = function(nama = '', keterangan = '', bin = '') {
+            editWakifCount++;
+            const wakifRow = document.createElement('div');
+            wakifRow.id = `edit-wakif-row-${editWakifCount}`;
+            wakifRow.className = 'bg-white p-4 border-2 border-orange-200 rounded-xl space-y-3 animate-slide-in';
+            wakifRow.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-gray-700">Wakif #${editWakifCount}</span>
+                    <button type="button" onclick="removeEditWakifRow(${editWakifCount})" 
+                            class="text-red-500 hover:text-red-700 hover:bg-red-100 p-2 rounded transition">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Wakif *</label>
+                        <input type="text" name="wakif_nama_${editWakifCount}" value="${nama}" placeholder="Masukkan nama wakif" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bin/Binti *</label>
+                        <select name="wakif_keterangan_${editWakifCount}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none" required>
+                            <option value="">Pilih Bin/Binti</option>
+                            <option value="Bin" ${keterangan === 'Bin' ? 'selected' : ''}>Bin</option>
+                            <option value="Binti" ${keterangan === 'Binti' ? 'selected' : ''}>Binti</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Bin/Binti *</label>
+                        <input type="text" name="wakif_bin_${editWakifCount}" value="${bin}" placeholder="Nama bin/binti" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none" required>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('editWakifContainer').appendChild(wakifRow);
+            document.getElementById('emptyEditWakifMessage').style.display = 'none';
+        }
+
+        window.removeEditWakifRow = function(id) {
+            const row = document.getElementById(`edit-wakif-row-${id}`);
+            if (row) {
+                row.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    row.remove();
+                    if (document.getElementById('editWakifContainer').children.length === 0) {
+                        document.getElementById('emptyEditWakifMessage').style.display = 'block';
+                    }
+                }, 300);
+            }
+        }
+
+        // Upload data-URI images found inside HTML to server and replace with URLs
+        async function uploadDataUriImagesFromHtml(html) {
+            if (!html || typeof html !== 'string' || html.indexOf('data:image') === -1) return html;
+            let result = html;
+            const dataUriRegex = /src=["'](data:image\/(png|jpeg|jpg|gif|webp);base64,[^"']+)["']/gi;
+            let match;
+            const seen = new Set();
+            while ((match = dataUriRegex.exec(html)) !== null) {
+                const dataUri = match[1];
+                if (seen.has(dataUri)) continue;
+                seen.add(dataUri);
+                try {
+                    const blob = await (await fetch(dataUri)).blob();
+                    const ext = (blob.type && blob.type.split('/')[1]) ? blob.type.split('/')[1] : 'png';
+                    const filename = `pasted_${Date.now()}.${ext}`;
+                    const file = new File([blob], filename, { type: blob.type });
+                    const fd = new FormData();
+                    fd.append('image', file);
+
+                    const resp = await fetch('/layanan-tambahan/wakaf-quran/upload-image', { method: 'POST', body: fd });
+                    if (resp.ok) {
+                        const json = await resp.json();
+                        if (json && json.url) {
+                            result = result.split(dataUri).join(json.url);
+                        } else {
+                            console.error('Invalid upload response for data URI', json);
+                        }
+                    } else {
+                        console.error('Upload failed for data URI:', resp.status, resp.statusText);
+                    }
+                } catch (e) {
+                    console.error('Error uploading data URI image:', e);
+                }
+            }
+            return result;
+        }
+
+        // Submit edit wakaf
+        window.submitEditWakaf = async function() {
+            const form = document.getElementById('editWakafForm');
+            const formData = new FormData(form);
+
+            // Get wakif data
+            const wakifData = [];
+            const wakifRows = document.querySelectorAll('#editWakifContainer > div');
+            wakifRows.forEach((row, index) => {
+                const namaInput = row.querySelector(`input[name="wakif_nama_${index + 1}"]`);
+                const keteranganSelect = row.querySelector(`select[name="wakif_keterangan_${index + 1}"]`);
+                const binInput = row.querySelector(`input[name="wakif_bin_${index + 1}"]`);
+                
+                if (namaInput && namaInput.value.trim()) {
+                    wakifData.push({
+                        nama: namaInput.value.trim(),
+                        keterangan: keteranganSelect ? keteranganSelect.value : '',
+                        bin: binInput ? binInput.value.trim() : ''
+                    });
+                }
+            });
+
+            // Build payload
+            let buktiTransfer = '';
+            const existingImagePath = document.getElementById('existingImagePath').value;
+            let editorContent = editQuillEditor ? editQuillEditor.root.innerHTML : '';
+            
+            if (editorContent && editorContent.trim()) {
+                // Use text from Quill editor (prioritize new content over existing image)
+                buktiTransfer = editorContent;
+            } else if (existingImagePath) {
+                // Use existing image if no new content
+                buktiTransfer = existingImagePath;
+            }
+
+            // If buktiTransfer contains data URI images, upload them and replace
+            if (buktiTransfer && typeof buktiTransfer === 'string' && buktiTransfer.indexOf('data:image') !== -1) {
+                try {
+                    buktiTransfer = await uploadDataUriImagesFromHtml(buktiTransfer);
+                } catch (e) {
+                    console.error('Error processing embedded images in bukti_transfer:', e);
+                }
+            }
+            
+            const payload = {
+                nama_pemesan: formData.get('nama_pemesan'),
+                nomor_whatsapp: formData.get('nomor_whatsapp'),
+                jumlah_mushaf: parseInt(formData.get('jumlah_mushaf')),
+                harga_per_mushaf: parseInt(formData.get('harga_per_mushaf').replace(/\./g, '')),
+                total_harga: parseInt(formData.get('total_harga')),
+                payment_type: formData.get('payment_type'),
+                bukti_transfer: buktiTransfer,
+                wakif: wakifData
+            };
+
+            // Determine entry ID (validate and fallback to global if necessary)
+            let entryId = formData.get('id');
+            if (!entryId || entryId === 'undefined' || entryId === 'null') {
+                entryId = window.currentEditEntryId || null;
+            }
+
+            if (!entryId) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'ID entry tidak valid. Silakan buka kembali modal edit.' });
+                return;
+            }
+
+            // Ask user if they want to send WhatsApp notification BEFORE sending the update
+            Swal.fire({
+                icon: 'info',
+                title: 'Kirim Notifikasi WhatsApp?',
+                text: 'Apakah Anda ingin mengirimkan notifikasi update ke nomor pemesan?',
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Kirim Pesan',
+                cancelButtonText: 'Tidak, Skip'
+            }).then((result) => {
+                // Determine if WhatsApp should be skipped
+                const skipWhatsApp = !result.isConfirmed;
+
+                // Add skipWhatsApp flag to payload
+                payload.skipWhatsApp = skipWhatsApp;
+
+                // Now send the update request
+                fetch(`/layanan-tambahan/wakaf-quran/${entryId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        if (skipWhatsApp) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'Data wakaf berhasil diperbarui (tanpa notifikasi WhatsApp)',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'Data wakaf berhasil diperbarui dan notifikasi WhatsApp sedang dikirim...',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: data.message || 'Gagal memperbarui data'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Terjadi kesalahan: ' + err.message
+                    });
+                });
+            });
+        }
+
+        // Delete wakaf entry
+        async function deleteWakafEntry(button) {
+            const id = button.getAttribute('data-id');
+            console.log('Delete button clicked, ID:', id);
+
+            if (!id || id === 'undefined') {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'ID entry tidak valid',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
+                return;
+            }
+
+            const confirmed = await Swal.fire({
+                title: 'Hapus Entry?',
+                text: 'Anda yakin ingin menghapus entry wakaf quran ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!confirmed.isConfirmed) return;
+
+            try {
+                const url = `/layanan-tambahan/wakaf-quran/${id}`;
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                // Ensure response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Remove row from DOM with a short animation and update stats client-side
+                    const row = document.getElementById(`entry-row-${id}`);
+                    if (row) {
+                        row.style.animation = 'slideOut 0.3s ease-out';
+                        setTimeout(() => {
+                            const jumlah = parseInt(row.getAttribute('data-jumlah-mushaf') || '0');
+                            const totalHarga = parseInt(row.getAttribute('data-total-harga') || '0');
+                            row.remove();
+
+                            updateStatsAfterDeletion(jumlah, totalHarga);
+
+                            // If no rows remaining, hide table and show empty message
+                            const tbodyRows = document.querySelectorAll('#wakafTable tbody tr');
+                            if (tbodyRows.length === 0) {
+                                document.getElementById('wakafTable').classList.add('hidden');
+                                const empty = document.getElementById('emptyTableMessage');
+                                if (empty) empty.classList.remove('hidden');
+                            }
+                        }, 300);
+                    }
+
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Entry wakaf quran berhasil dihapus',
+                        icon: 'success',
+                        confirmButtonColor: '#f59e0b'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: result.message || 'Gagal menghapus entry',
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Terjadi kesalahan saat menghapus entry',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+
+        // Update stats on the page after a deletion (client-side only)
+        function updateStatsAfterDeletion(jumlahRemoved, nominalRemoved) {
+            try {
+                const pemesanEl = document.getElementById('stat-total-pemesan');
+                if (pemesanEl) {
+                    let val = parseInt(pemesanEl.textContent.replace(/\D/g,'')) || 0;
+                    val = Math.max(0, val - 1);
+                    pemesanEl.textContent = val;
+                }
+
+                const quranEl = document.getElementById('stat-total-quran');
+                if (quranEl) {
+                    let val = parseInt(quranEl.textContent.replace(/\D/g,'')) || 0;
+                    val = Math.max(0, val - (parseInt(jumlahRemoved) || 0));
+                    quranEl.textContent = val;
+                }
+
+                const nominalEl = document.getElementById('stat-nominal');
+                if (nominalEl) {
+                    let currentNom = parseInt(nominalEl.textContent.replace(/[^0-9]/g,'')) || 0;
+                    currentNom = Math.max(0, currentNom - (parseInt(nominalRemoved) || 0));
+                    nominalEl.textContent = 'Rp ' + formatRibuan(currentNom);
+                }
+            } catch (e) {
+                console.warn('updateStatsAfterDeletion error', e);
+            }
+        }
+
+        // Calculate total harga otomatis for edit modal
+        function formatRibuan(angka) {
+            return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        // Add listener to handle payment type in edit modal (Free -> total 0, Paid -> total = layanan price)
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentSelect = document.getElementById('editPaymentType');
+            const hargaInput = document.getElementById('editHargaPerMushaf');
+            const totalDisplay = document.getElementById('editTotalHargaDisplay');
+            const totalHidden = document.getElementById('editTotalHarga');
+            if (paymentSelect && hargaInput && totalDisplay && totalHidden) {
+                paymentSelect.addEventListener('change', function(e) {
+                    const val = e.target.value;
+                    const layananId = document.getElementById('editIdLayananTambahan')?.value || '1';
+                    const layananPrice = layananData[layananId] ? parseInt(layananData[layananId].price) : 0;
+                    if (val === 'Free') {
+                        totalHidden.value = 0;
+                        totalDisplay.value = 'Rp 0';
+                        // Do NOT change harga_per_mushaf, only override total
+                        paymentSelect.dataset.override = 'true';
+                    } else if (val === 'Paid') {
+                        const jumlah = parseInt(document.getElementById('editJumlahMushaf')?.value) || 1;
+                        const totalPaid = layananPrice * jumlah;
+                        totalHidden.value = totalPaid;
+                        totalDisplay.value = 'Rp ' + formatRibuan(totalPaid);
+                        // Do NOT change harga_per_mushaf, only override total
+                        paymentSelect.dataset.override = 'true';
+                    } else {
+                        paymentSelect.dataset.override = 'false';
+                        hargaInput.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('input', function(e) {
+            // If payment type override is active, skip automatic total calculation
+            const paymentSelect = document.getElementById('editPaymentType');
+            const override = paymentSelect && paymentSelect.dataset && paymentSelect.dataset.override === 'true';
+            if (override === 'free') return;
+            // If user types into harga field, keep only digits (no formatting)
+            if (e.target.id === 'editHargaPerMushaf') {
+                const raw = e.target.value.replace(/[^0-9]/g, '');
+                e.target.value = raw;
+            }
+
+            if (e.target.name === 'jumlah_mushaf' || e.target.name === 'harga_per_mushaf') {
+                if (document.getElementById('editJumlahMushaf')) {
+                    const jumlah = parseInt(document.getElementById('editJumlahMushaf')?.value) || 0;
+                    const hargaStr = document.getElementById('editHargaPerMushaf')?.value || '0';
+                    const harga = parseInt(hargaStr.replace(/\./g, '')) || 0; // Remove dots for calculation
+                    const total = jumlah * harga;
+                    
+                    const totalDisplay = document.getElementById('editTotalHargaDisplay');
+                    if (total > 0) {
+                        totalDisplay.value = 'Rp ' + formatRibuan(total);
+                        document.getElementById('editTotalHarga').value = total;
+                    } else {
+                        totalDisplay.value = '';
+                        document.getElementById('editTotalHarga').value = '';
+                    }
+                }
+            }
+        });
+
+        // Format harga per mushaf with ribuan when focus is lost
+        document.addEventListener('blur', function(e) {
+            if (e.target.id === 'editHargaPerMushaf') {
+                const raw = e.target.value.replace(/[^0-9]/g, '');
+                if (raw) {
+                    e.target.value = formatRibuan(parseInt(raw));
+                }
+            }
+        });
+
+        // Remove ribuan formatting when harga field gets focus for editing
+        document.addEventListener('focus', function(e) {
+            if (e.target.id === 'editHargaPerMushaf') {
+                const raw = e.target.value.replace(/\./g, '');
+                e.target.value = raw;
+            }
+        });
+    </script>
+
+    <style>
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+</body>
+</html>
